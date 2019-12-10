@@ -17,78 +17,24 @@ using Sandbox.Game.Lights;
 
 namespace Slowpokefarm.Vaporator
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_Refinery), false, "LargeBlockVaporator")]
-    public class MoistureEvaporatorAnimation : MyGameLogicComponent
+    public class MoistureEvaporatorAnimation
     {
         /* Thanks to CreigWarfare from Official Discord for helping with the Animation code <3 */
 
-        //configs
+        // Config values
+        public float TopCurrHeight = 0f;
         private float TopMaxHeight = 1f; //meters       
-        private float TopCurrHeight = 0f;
         private float incrementAmount = 0.003f;
 
         private int AnimationLoop = 0;
         private bool playAnimation = true;
         public Dictionary<string, MyEntitySubpart> subparts;
 
-        MyObjectBuilder_EntityBase objectBuilder = null;
-        IMyCubeBlock waterEvaporator = null;
+        public IMyRefinery waterEvaporator;
+
         private bool subPartEventregistered;
 
-        public override void Init(MyObjectBuilder_EntityBase objectBuilder)
-        {
-            try
-            {
-                base.Init(objectBuilder);
-                this.objectBuilder = objectBuilder;
-                waterEvaporator = Entity as IMyCubeBlock;
-                NeedsUpdate = MyEntityUpdateEnum.EACH_FRAME;
-            }
-            catch (Exception e)
-            {
-                MyVisualScriptLogicProvider.ShowNotificationToAll("Init Error" + e, 10000, "Red");
-            }
-        }
-
-        public override MyObjectBuilder_EntityBase GetObjectBuilder(bool copy = false)
-        {
-            return objectBuilder;
-        }
-
-        public override void UpdateAfterSimulation()
-        {
-            try
-            {
-                if (MyAPIGateway.Session == null)
-                    return;
-
-                var isHost = MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE ||
-                             MyAPIGateway.Multiplayer.IsServer;
-
-                var isDedicatedHost = isHost && MyAPIGateway.Utilities.IsDedicated;
-
-                if (isDedicatedHost)
-                    return;
-
-                subparts = (waterEvaporator as MyEntity).Subparts;
-                //((waterEvaporator as MyEntity).Subparts.FirstPair().Value as MyEntitySubpart).OnClose += SubpartClosed;
-
-                if (waterEvaporator.IsWorking)
-                {
-                    RotationAnimation(true);
-                }
-                else if (TopCurrHeight > 0)
-                {
-                    RotationAnimation(false);
-                }
-            }
-            catch (Exception e)
-            {
-                MyVisualScriptLogicProvider.ShowNotificationToAll("Update Error" + e, 2500, "Red");
-            }
-        }
-
-        private void RotationAnimation(bool on)
+        public void RotationAnimation(bool on)
         {
             try
             {
@@ -176,10 +122,6 @@ namespace Slowpokefarm.Vaporator
                 subPartEventregistered = false;
                 subPartEntity.OnClose -= SubpartClosed;
             }
-        }
-
-        public override void Close()
-        {
         }
     }
 }

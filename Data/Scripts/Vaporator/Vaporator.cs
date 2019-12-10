@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Text;
 using Sandbox.Common.ObjectBuilders;
+using Sandbox.Game;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
+using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
@@ -24,6 +26,7 @@ namespace Slowpokefarm.Vaporator
 
         Sandbox.ModAPI.IMyTerminalBlock terminalBlock;
         Vape_AtmosphereDetector atmoDet = new Vape_AtmosphereDetector();
+        MoistureEvaporatorAnimation animation = new MoistureEvaporatorAnimation();
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
@@ -37,12 +40,46 @@ namespace Slowpokefarm.Vaporator
             builder = objectBuilder;
 
             // MUST set the object to update atleast ONCE because you can not modify the inventory inside Init method!!!
-            Entity.NeedsUpdate = MyEntityUpdateEnum.EACH_100TH_FRAME;
+            Entity.NeedsUpdate = MyEntityUpdateEnum.EACH_FRAME | MyEntityUpdateEnum.EACH_100TH_FRAME;
 			
             terminalBlock = Entity as Sandbox.ModAPI.IMyTerminalBlock;
             terminalBlock.AppendingCustomInfo += appendCustomInfo;
         }
-		
+
+        public override void UpdateAfterSimulation()
+        {
+            try
+            {
+                if (MyAPIGateway.Session == null)
+                    return;
+
+                var isHost = MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE ||
+                             MyAPIGateway.Multiplayer.IsServer;
+
+                var isDedicatedHost = isHost && MyAPIGateway.Utilities.IsDedicated;
+
+                if (isDedicatedHost)
+                    return;
+
+                animation.subparts = (m_vaporator as MyEntity).Subparts;
+                animation.waterEvaporator = m_vaporator;
+                //((waterEvaporator as MyEntity).Subparts.FirstPair().Value as MyEntitySubpart).OnClose += SubpartClosed;
+
+                if (m_vaporator.Enabled && m_vaporator.IsWorking && m_vaporator.IsFunctional)
+                {
+                    animation.RotationAnimation(true);
+                }
+                else if (animation.TopCurrHeight > 0)
+                {
+                    animation.RotationAnimation(false);
+                }
+            }
+            catch (Exception e)
+            {
+                MyVisualScriptLogicProvider.ShowNotificationToAll("Update Error" + e, 2500, "Red");
+            }
+        }
+
         public override void UpdateBeforeSimulation100()
         {
             w_density = atmoDet.AtmosphereDetectionVaporator (this.Entity);
